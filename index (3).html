@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>YUN</title>
+
+<style>
+body{
+  font-family: "Noto Sans TC", sans-serif;
+  text-align:center;
+  margin:0;
+  padding:30px;
+  background: linear-gradient(135deg,#e6d6ff,#d8c2ff,#f3e8ff);
+}
+
+h1{
+  color:#ffffff;
+  font-size:28px;
+  text-shadow:0 2px 6px rgba(0,0,0,0.2);
+}
+
+.card{
+  background:white;
+  padding:25px;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.15);
+  max-width:400px;
+  margin:20px auto;
+}
+
+button{
+  padding:10px 18px;
+  margin:5px;
+  border:none;
+  border-radius:20px;
+  background:#b388ff;
+  color:white;
+  font-size:14px;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+button:hover{
+  transform:scale(1.05);
+  background:#9c6dff;
+}
+
+.category-btn{
+  background:#e0ccff;
+  color:#4b2e83;
+}
+
+#result{
+  font-size:22px;
+  margin:20px 0;
+  font-weight:bold;
+  color:#7b4fff;
+}
+
+.small{
+  font-size:14px;
+  color:#666;
+}
+</style>
+
+</head>
+<body>
+
+<h1>🎼 選啥好呢</h1>
+
+<div class="card">
+
+<div id="categories"></div>
+
+<button onclick="clearFilter()">清除分類</button>
+
+<p class="small" id="count">讀取中...</p>
+
+<div id="result">請按抽歌</div>
+
+<button onclick="pickSong()">🎵 抽一首</button>
+
+</div>
+
+<script>
+
+const sheetURL = "https://opensheet.elk.sh/1fuDJjJlL9Pczrg67gODwxBfZZCuAZxczkAgJ_pTOtsM/工作表1";
+
+let allSongs = [];
+let filteredSongs = [];
+
+fetch(sheetURL)
+.then(res=>res.json())
+.then(data=>{
+    allSongs = data;
+    filteredSongs = data;
+    updateCount();
+    generateCategories();
+});
+
+function generateCategories(){
+    const categories = [...new Set(allSongs.map(song=>song.類別))];
+    const container = document.getElementById("categories");
+    categories.forEach(cat=>{
+        const btn = document.createElement("button");
+        btn.innerText = cat;
+        btn.className = "category-btn";
+        btn.onclick = ()=>filterCategory(cat);
+        container.appendChild(btn);
+    });
+}
+
+function filterCategory(cat){
+    filteredSongs = allSongs.filter(song=>song.類別===cat);
+    updateCount();
+}
+
+function clearFilter(){
+    filteredSongs = allSongs;
+    updateCount();
+}
+
+function updateCount(){
+    document.getElementById("count").innerText =
+        "目前 " + filteredSongs.length + " 首歌";
+}
+
+function pickSong(){
+    if(filteredSongs.length===0) return;
+    const random = filteredSongs[Math.floor(Math.random()*filteredSongs.length)];
+    document.getElementById("result").innerHTML =
+        random.歌名 + "<br><span class='small'>" + random.歌手 + "</span>";
+}
+
+</script>
+
+</body>
+</html>
