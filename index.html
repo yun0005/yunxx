@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>我的歌單</title>
+<style>
+body { 
+  margin:0; padding:0; 
+  font-family:"Microsoft JhengHei",sans-serif; 
+  background:#f5f0e6; /* 淡駝色 */
+  color:#4a3f2f;
+}
+.container { 
+  max-width:1000px; margin:30px auto; padding:20px; 
+  background:#fff8f0; border-radius:15px; 
+}
+input { 
+  padding:8px 12px; margin:5px 0; border-radius:8px; border:none; 
+  font-size:14px; background:#f5f0e6; color:#4a3f2f; width:100%;
+}
+button { 
+  padding:6px 12px; margin:3px; border-radius:20px; border:none; 
+  font-size:14px; cursor:pointer;
+}
+button.type-btn { background:#e0d6c2; color:#4a3f2f; }
+button.type-btn.selected { background:#4a3f2f; color:#f5f0e6; }
+button.copy-btn { background:#c5b69f; color:#fff; }
+table { width:100%; margin-top:15px; border-collapse:collapse; font-size:14px; }
+th, td { padding:10px; text-align:center; }
+th { background:#e0d6c2; }
+tr:nth-child(even) { background:#f5f2e8; }
+#genreButtons { display:flex; flex-wrap:wrap; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎵 我的歌單</h1>
+<input type="text" id="searchInput" placeholder="搜尋歌名或歌手..." onkeyup="applyFilters()">
+<div id="genreButtons"></div>
+<table>
+<thead>
+<tr><th>歌曲</th><th>歌手</th><th>類型</th><th>複製</th></tr>
+</thead>
+<tbody id="songTable"></tbody>
+</table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+let songs = []; let selectedGenres = [];
+const gsheetCSV = "https://docs.google.com/spreadsheets/d/1YIUx1gfY1xczRMN5fr-U_q-rIDZxyTaJc2UZejLczQk/export?format=csv";
+
+Papa.parse(gsheetCSV,{download:true,header:true,skipEmptyLines:true,complete:function(results){
+results.data.forEach(row=>{
+const songName = row["歌名"]?.trim();
+const artist = row["歌手"]?.trim();
+const genres = Object.keys(row).slice(2).map(k=>row[k]?.trim()).filter(g=>g);
+if(songName && artist){ songs.push({name:songName, artist:artist, genre:genres}); }
+});
+createGenreButtons(); renderTable(songs);
+}});
+
+function createGenreButtons(){
+const genreSet = new Set();
+songs.forEach(song => song.genre.forEach(g => genreSet.add(g)));
+const container = document.getElementById("genreButtons"); container.innerHTML = "";
+genreSet.forEach(genre=>{
+const btn = document.createElement("button"); btn.innerText = genre; btn.className = "type-btn";
+btn.onclick = ()=>{
+btn.classList.toggle("selected");
+if(selectedGenres.includes(genre)){ selectedGenres = selectedGenres.filter(g=>g!==genre); } 
+else { selectedGenres.push(genre); }
+applyFilters();
+};
+container.appendChild(btn);
+});
+}
+
+function applyFilters(){
+const keyword = document.getElementById("searchInput").value.toLowerCase();
+let filtered = songs.filter(song=>{
+const matchSearch = song.name.toLowerCase().includes(keyword) || song.artist.toLowerCase().includes(keyword);
+const matchGenre = selectedGenres.length===0 || song.genre.some(g => selectedGenres.includes(g));
+return matchSearch && matchGenre;
+});
+renderTable(filtered);
+}
+
+function renderTable(list){
+const table = document.getElementById("songTable"); table.innerHTML = "";
+list.forEach((song,index)=>{
+table.innerHTML += `<tr><td>${song.name}</td><td>${song.artist}</td><td>${song.genre.join(" / ")}</td><td><button class="copy-btn" onclick="copySong('${song.name} - ${song.artist}')">📋</button></td></tr>`;
+});
+}
+
+function copySong(text){
+navigator.clipboard.writeText(text).then(()=>alert("已複製")).catch(()=>alert("複製失敗"));
+}
+</script>
+</body>
+</html>
